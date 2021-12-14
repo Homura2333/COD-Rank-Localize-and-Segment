@@ -26,6 +26,7 @@ generator.load_state_dict(torch.load('./models/Resnet/Model_50_gen.pth'))
 generator.cuda()
 generator.eval()
 
+# 传统的数据集
 test_datasets = ['CAMO','CHAMELEON','COD10K','NC4K']
 
 for dataset in test_datasets:

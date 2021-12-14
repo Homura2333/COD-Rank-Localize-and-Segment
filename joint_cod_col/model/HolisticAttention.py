@@ -6,7 +6,10 @@ from torch.nn.parameter import Parameter
 import numpy as np
 import scipy.stats as st
 
+# HolisticAttention的意思是整体关注？
 
+
+# 高斯核？
 def gkern(kernlen=16, nsig=3):
     interval = (2*nsig+1.)/kernlen
     x = np.linspace(-nsig-interval/2., nsig+interval/2., kernlen+1)
@@ -15,14 +18,15 @@ def gkern(kernlen=16, nsig=3):
     kernel = kernel_raw/kernel_raw.sum()
     return kernel
 
-
+# 最大最小归一化？
 def min_max_norm(in_):
     max_ = in_.max(3)[0].max(2)[0].unsqueeze(2).unsqueeze(3).expand_as(in_)
     min_ = in_.min(3)[0].min(2)[0].unsqueeze(2).unsqueeze(3).expand_as(in_)
     in_ = in_ - min_
     return in_.div(max_-min_+1e-8)
 
-
+# 整体关注模块
+# TODO：干嘛用的？被组合在Saliency_feat_encoder中
 class HA(nn.Module):
     # holistic attention module
     def __init__(self):

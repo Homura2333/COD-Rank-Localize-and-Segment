@@ -5,6 +5,10 @@ from ResNet import B2_ResNet
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 from torch.nn import Parameter, Softmax
 
+# TODO：这个文件时干嘛的？好像很多模块在ResNet_models.py里也出现了，而且感觉没有用到
+
+
+# TODO：generator是什么？好像就是显著性特征encoder外面套了一层？
 class Generator(nn.Module):
     def __init__(self, channel=64):
         super(Generator, self).__init__()
@@ -13,7 +17,7 @@ class Generator(nn.Module):
     def forward(self, x):
         self.sal_feat = self.sal_encoder(x)
         return self.sal_feat
-
+# DRA中的通道注意模块
 class CAM_Module(nn.Module):
     """ Channel attention module"""
     # paper: Dual Attention Network for Scene Segmentation
@@ -43,6 +47,7 @@ class CAM_Module(nn.Module):
         out = self.gamma*out + x
         return out
 
+# DRA中的位置注意模块
 class PAM_Module(nn.Module):
     """ Position attention module"""
     #paper: Dual Attention Network for Scene Segmentation
@@ -140,6 +145,7 @@ class RCAB(nn.Module):
         res += x
         return res
 
+# 显著性特征encoder
 class Saliency_feat_encoder(nn.Module):
     # resnet based encoder decoder
     def __init__(self, channel=32):

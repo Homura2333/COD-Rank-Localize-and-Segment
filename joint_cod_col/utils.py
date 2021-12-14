@@ -2,6 +2,7 @@ import torch.nn as nn
 import torch
 import numpy as np
 
+# 裁剪梯度，控制到一个范围内
 def clip_gradient(optimizer, grad_clip):
     for group in optimizer.param_groups:
         for param in group['params']:
@@ -9,12 +10,14 @@ def clip_gradient(optimizer, grad_clip):
                 param.grad.data.clamp_(-grad_clip, grad_clip)
 
 
+# 学习率衰减
 def adjust_lr(optimizer, init_lr, epoch, decay_rate=0.1, decay_epoch=5):
     decay = decay_rate ** (epoch // decay_epoch)
     for param_group in optimizer.param_groups:
         param_group['lr'] *= decay
 
-
+# 截断的归一化？
+# TODO:没太看懂
 def truncated_normal_(tensor, mean=0, std=1):
     size = tensor.shape
     tmp = tensor.new_empty(size + (4,)).normal_()
@@ -23,6 +26,8 @@ def truncated_normal_(tensor, mean=0, std=1):
     tensor.data.copy_(tmp.gather(-1, ind).squeeze(-1))
     tensor.data.mul_(std).add_(mean)
 
+# 初始化权重？
+# TODO:没太看懂
 def init_weights(m):
     if type(m) == nn.Conv2d or type(m) == nn.ConvTranspose2d:
         nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='relu')
@@ -30,12 +35,14 @@ def init_weights(m):
         #nn.init.normal_(m.bias, std=0.001)
         truncated_normal_(m.bias, mean=0, std=0.001)
 
+# TODO: 不懂
 def init_weights_orthogonal_normal(m):
     if type(m) == nn.Conv2d or type(m) == nn.ConvTranspose2d:
         nn.init.orthogonal_(m.weight)
         truncated_normal_(m.bias, mean=0, std=0.001)
         #nn.init.normal_(m.bias, std=0.001)
 
+# l2正则化
 def l2_regularisation(m):
     l2_reg = None
 
@@ -46,6 +53,7 @@ def l2_regularisation(m):
             l2_reg = l2_reg + W.norm(2)
     return l2_reg
 
+# TODO:不太懂这个类干嘛的
 class AvgMeter(object):
     def __init__(self, num=40):
         self.num = num

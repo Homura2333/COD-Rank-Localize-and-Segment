@@ -10,6 +10,8 @@ from torch.autograd import Variable
 from torch.distributions import Normal, Independent, kl
 import numpy as np
 
+# TODO：generator是什么？好像就是显著性特征encoder外面套了一层？
+# TODO： 疑问：为什么backbone.py里面也有一个generator？
 class Generator(nn.Module):
     def __init__(self, channel):
         super(Generator, self).__init__()
@@ -27,6 +29,10 @@ class Generator(nn.Module):
                               align_corners=True)
         return fix_pred, cod_pred1, cod_pred2
 
+
+# DRA中的位置注意模块
+# TODO： 疑问：为什么backbone.py里面也有一个PAM_Module？
+# TODO：好像没有用到啊，搞毛线啊，没用到的就不要写出来好吗
 class PAM_Module(nn.Module):
     """ Position attention module"""
     #paper: Dual Attention Network for Scene Segmentation
@@ -61,7 +67,8 @@ class PAM_Module(nn.Module):
         out = self.gamma*out + x
         return out
 
-
+# TODO： 疑问：为什么backbone.py里面也有一个Classifier_Module？
+# 用在Fixation Decoder和Saliency feat decoder里
 class Classifier_Module(nn.Module):
     def __init__(self,dilation_series,padding_series,NoLabels, input_channel):
         super(Classifier_Module, self).__init__()
@@ -78,6 +85,8 @@ class Classifier_Module(nn.Module):
         return out
 
 ## Channel Attention (CA) Layer
+# TODO： 疑问：为什么backbone.py里面也有一个Channel Attention Layer？
+# 用在RCAB里
 class CALayer(nn.Module):
     def __init__(self, channel, reduction=16):
         super(CALayer, self).__init__()
@@ -97,6 +106,8 @@ class CALayer(nn.Module):
         return x * y
 
 ## Residual Channel Attention Block (RCAB)
+# TODO：疑问：为什么backbone.py里面也有一个Residual Channel Attention Block？
+# 用在Fixation Decoder里
 class RCAB(nn.Module):
     # paper: Image Super-Resolution Using Very DeepResidual Channel Attention Networks
     # input: B*C*H*W
@@ -123,6 +134,7 @@ class RCAB(nn.Module):
         #res = self.body(x).mul(self.res_scale)
         res += x
         return res
+
 
 class BasicConv2d(nn.Module):
     def __init__(self, in_planes, out_planes, kernel_size, stride=1, padding=0, dilation=1):
@@ -151,6 +163,8 @@ class Triple_Conv(nn.Module):
     def forward(self, x):
         return self.reduce(x)
 
+# 被组合在Saliency_feat_encoder中
+# Fixation Decoder
 class Saliency_feat_decoder(nn.Module):
     # resnet based encoder decoder
     def __init__(self, channel):
@@ -207,6 +221,8 @@ class Saliency_feat_decoder(nn.Module):
 
         return sal_pred
 
+# 被组合在Saliency_feat_encoder中
+# Camouflage Decoder
 class Fix_feat_decoder(nn.Module):
     # resnet based encoder decoder
     def __init__(self, channel):
@@ -246,7 +262,7 @@ class Fix_feat_decoder(nn.Module):
 
         return sal_pred
 
-
+# TODO：疑问：为什么backbone.py里也有一个Saliency_feat_encoder？
 class Saliency_feat_encoder(nn.Module):
     # resnet based encoder decoder
     def __init__(self, channel):
@@ -258,8 +274,8 @@ class Saliency_feat_encoder(nn.Module):
         self.upsample2 = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
         self.upsample05 = nn.Upsample(scale_factor=0.5, mode='bilinear', align_corners=True)
         self.dropout = nn.Dropout(0.3)
-        self.cod_dec = Fix_feat_decoder(channel)
-        self.sal_dec = Saliency_feat_decoder(channel)
+        self.cod_dec = Fix_feat_decoder(channel)  # Fixation Decoder
+        self.sal_dec = Saliency_feat_decoder(channel)  # Camouflage Decoder
 
         self.HA = HA()
 
@@ -271,18 +287,21 @@ class Saliency_feat_encoder(nn.Module):
         x = self.resnet.bn1(x)
         x = self.resnet.relu(x)
         x = self.resnet.maxpool(x)
+        # 论文里的s1、s2、s3、s4吧
         x1 = self.resnet.layer1(x)  # 256 x 64 x 64
         x2 = self.resnet.layer2(x1)  # 512 x 32 x 32
         x3 = self.resnet.layer3_1(x2)  # 1024 x 16 x 16
         x4 = self.resnet.layer4_1(x3)  # 2048 x 8 x 8
 
+        # s1、s2、s3、s4分别喂给Fixation Decoder和Camouflage Decoder
         fix_pred = self.cod_dec(x1,x2,x3,x4)
         init_pred = self.sal_dec(x1,x2,x3,x4)
 
-        x2_2 = self.HA(1-self.upsample05(fix_pred).sigmoid(), x2)
+        x2_2 = self.HA(1-self.upsample05(fix_pred).sigmoid(), x2)  # fixation decoder的结果用1减去后（反向注意力）送给整体关注模块
+        # 再做层层卷积
         x3_2 = self.resnet.layer3_2(x2_2)  # 1024 x 16 x 16
         x4_2 = self.resnet.layer4_2(x3_2)  # 2048 x 8 x 8
-        ref_pred = self.sal_dec(x1,x2_2,x3_2,x4_2)
+        ref_pred = self.sal_dec(x1,x2_2,x3_2,x4_2)  #s1、sr2、sr3、sr4再喂给Camouflage Decoder
 
         return self.upsample4(fix_pred),self.upsample4(init_pred),self.upsample4(ref_pred)
 

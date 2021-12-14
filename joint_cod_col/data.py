@@ -6,7 +6,8 @@ import random
 import numpy as np
 from PIL import ImageEnhance
 
-# several data augumentation strategies
+# several data augumentation strategies 几个数据增强的方法
+# 随机水平翻转
 def cv_random_flip(img, fix, gt):
     flip_flag = random.randint(0, 1)
     # flip_flag2= random.randint(0,1)
@@ -18,6 +19,7 @@ def cv_random_flip(img, fix, gt):
     return img, fix, gt
 
 
+# 随机裁剪
 def randomCrop(image, fix, gt):
     border = 30
     image_width = image.size[0]
@@ -30,6 +32,7 @@ def randomCrop(image, fix, gt):
     return image.crop(random_region), fix.crop(random_region), gt.crop(random_region)
 
 
+# 随机旋转
 def randomRotation(image, fix, gt):
     mode = Image.BICUBIC
     if random.random() > 0.8:
@@ -39,7 +42,7 @@ def randomRotation(image, fix, gt):
         gt = gt.rotate(random_angle, mode)
     return image, fix, gt
 
-
+# 色彩增强？
 def colorEnhance(image):
     bright_intensity = random.randint(5, 15) / 10.0
     image = ImageEnhance.Brightness(image).enhance(bright_intensity)
@@ -51,7 +54,7 @@ def colorEnhance(image):
     image = ImageEnhance.Sharpness(image).enhance(sharp_intensity)
     return image
 
-
+# 加入随机的高斯噪声？
 def randomGaussian(image, mean=0, sigma=0.15):
     def gaussianNoisy(im, mean=mean, sigma=sigma):
         for _i in range(len(im)):
@@ -64,6 +67,7 @@ def randomGaussian(image, mean=0, sigma=0.15):
     img = img.reshape([width, height])
     return Image.fromarray(np.uint8(img))
 
+# 这个好像和上一个函数一模一样？
 def randomGaussian1(image, mean=0.1, sigma=0.35):
     def gaussianNoisy(im, mean=mean, sigma=sigma):
         for _i in range(len(im)):
@@ -76,7 +80,7 @@ def randomGaussian1(image, mean=0.1, sigma=0.35):
     img = img.reshape([width, height])
     return Image.fromarray(np.uint8(img))
 
-
+# 随机椒？
 def randomPeper(img):
     img = np.array(img)
     noiseNum = int(0.0015 * img.shape[0] * img.shape[1])
@@ -95,6 +99,8 @@ def randomPeper(img):
             img[randX, randY] = 255
     return Image.fromarray(img)
 
+
+# 显著性目标数据集？
 class SalObjDataset(data.Dataset):
     def __init__(self, image_root, gt_root, fix_root, trainsize):
         self.trainsize = trainsize
@@ -187,7 +193,7 @@ def get_loader(image_root, gt_root, fix_root, batchsize, trainsize, shuffle=True
                                   pin_memory=pin_memory)
     return data_loader
 
-
+# 测试数据集？
 class test_dataset:
     def __init__(self, image_root, testsize):
         self.testsize = testsize

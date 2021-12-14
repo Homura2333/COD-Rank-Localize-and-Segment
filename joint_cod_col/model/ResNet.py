@@ -2,6 +2,13 @@ import torch.nn as nn
 import math
 
 
+# 关系：
+# BasicBlock里有conv3x3，是组合关系
+# B2_ResNet里面有Bottleneck，也是组合关系
+# 但感觉好像BasicBlock没有被用到（应该只是没被find usages搜到吧）
+# B2_ResNet被Saliency_feat_encoder组合
+
+
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
     return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
